@@ -25,13 +25,10 @@
 #include <OpenGL/glu.h>
 #include <OpenGL/glext.h>
 #include <GL/glui.h>
-//#include "glui.h"
 #include <GLUT/glut.h>
 #include "cl.h"
 #include "cl_gl.h"
 #include "cl_gl_ext.h"
-
-
 
 // opencl vendor ids:
 #define ID_AMD		0x1002
@@ -42,7 +39,7 @@
 
 // title of these windows:
 
-const char *WINDOWTITLE = { "OpenCL/OpenGL Particle System -- Joe Parallel" };
+const char *WINDOWTITLE = { "OpenCL/OpenGL 3D Particle System -- Steve Owens" };
 const char *GLUITITLE   = { "User Interface Window" };
 
 // random parameters:					
@@ -58,8 +55,8 @@ const float VMIN =	{   -100. };
 const float VMAX =	{    100. };
 
 
-const int NUM_PARTICLES = 1024*1024;
-const int LOCAL_SIZE    = 64;
+const int NUM_PARTICLES = 1024 * 1024;
+const int LOCAL_SIZE    = 128;
 const char *CL_FILE_NAME   = { "particles.cl" };
 const char *CL_BINARY_NAME = { "particles.nv" };
 
@@ -69,7 +66,7 @@ const int GLUIFALSE = { false };
 
 #define ESCAPE		0x1b
 
-const int INIT_WINDOW_SIZE = { 700 };		// window size in pixels
+const int INIT_WINDOW_SIZE = { 1200 };		// window size in pixels
 
 const float ANGFACT = { 1. };
 const float SCLFACT = { 0.005f };
@@ -310,12 +307,13 @@ Display( )
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	glEnable( GL_DEPTH_TEST );
 	glShadeModel( GL_FLAT );
+
 	GLsizei vx = glutGet( GLUT_WINDOW_WIDTH );
 	GLsizei vy = glutGet( GLUT_WINDOW_HEIGHT );
 	GLsizei v = vx < vy ? vx : vy;			// minimum dimension
 	GLint xl = ( vx - v ) / 2;
 	GLint yb = ( vy - v ) / 2;
-	glViewport( xl, yb,  v, v );
+	glViewport( xl, yb,  v * 2, v * 2 );  // multiply by 2 for retina display scaling factor (2.0) issue
 
 
 	glMatrixMode( GL_PROJECTION );
@@ -620,8 +618,8 @@ InitCL( )
 void
 InitGlui( )
 {
-	glutInitWindowPosition( INIT_WINDOW_SIZE + 50, 0 );
-	Glui = GLUI_Master.create_glui( (char *) GLUITITLE );
+	glutInitWindowPosition( INIT_WINDOW_SIZE + 300, 200 );
+	Glui = GLUI_Master.create_glui( (char *) GLUITITLE);
 	Glui->add_statictext( (char *) GLUITITLE );
 	Glui->add_separator( );
 	Glui->add_checkbox( "Axes",             &AxesOn );
@@ -669,13 +667,12 @@ void
 InitGraphics( )
 {
 	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
+	//glutInitDisplayString("rgba double depth hidpi");
 	glutInitWindowPosition( 0, 0 );
 	glutInitWindowSize( INIT_WINDOW_SIZE, INIT_WINDOW_SIZE );
-
 	MainWindow = glutCreateWindow( WINDOWTITLE );
 	glutSetWindowTitle( WINDOWTITLE );
 	glClearColor( BACKCOLOR[0], BACKCOLOR[1], BACKCOLOR[2], BACKCOLOR[3] );
-
 
 	// setup the callback routines:
 
@@ -716,10 +713,10 @@ InitLists( )
 	// 	in the .cl file
 	// ****************************************
 
-		glColor3f( .9f, .9f, 0. );	// 0. <= r,g,b <= 1.
+		glColor3f( .9f, .1f, 0. );	// 0. <= r,g,b <= 1.
 		glPushMatrix( );
 			glTranslatef( -100.f, -800.f, 0.f );
-			glutWireSphere( 600.f, 100, 100 );
+			glutWireSphere( 400.f, 100, 100 );
 		glPopMatrix( );
 
 	// ****************************************
@@ -729,6 +726,12 @@ InitLists( )
 	// ****************************************
 
 	// do this for yourself...
+
+		glColor3f( .1f, .1f, .9f );	// 0. <= r,g,b <= 1.
+		glPushMatrix( );
+			glTranslatef( 800.f, -400.f, 0.f );
+			glutWireSphere( 50.f, 100, 100 );
+		glPopMatrix( );
 
 
 
