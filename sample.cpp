@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <omp.h>
+#include </usr/local/Cellar/libomp/10.0.0/include/omp.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -24,7 +24,8 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #include <OpenGL/glext.h>
-#include "GL/glui.h"
+#include <GL/glui.h>
+//#include "glui.h"
 #include <GLUT/glut.h>
 #include "cl.h"
 #include "cl_gl.h"
