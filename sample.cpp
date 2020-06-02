@@ -8,22 +8,29 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#ifdef WIN32
-#include <windows.h>
-#pragma warning(disable:4996)
-#endif
+#define FALSE	0
 
-#ifdef WIN32
-#include "glew.h"
-#endif
+// #ifdef WIN32
+// #include <windows.h>
+// #pragma warning(disable:4996)
+// #endif
 
+// #ifdef WIN32
+// #include "glew.h"
+// #endif
+
+#include <OpenCL/opencl.h>
+#include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
-#include "glut.h"
-#include "glui.h"
-
+#include <OpenGL/glext.h>
+#include "GL/glui.h"
+#include <GLUT/glut.h>
 #include "cl.h"
 #include "cl_gl.h"
+#include "cl_gl_ext.h"
+
+
 
 // opencl vendor ids:
 #define ID_AMD		0x1002
@@ -210,9 +217,9 @@ Animate( )
 	glutSetWindow( MainWindow );
 	glFinish( );
 
-	status = clEnqueueAcquireGLObjects( CmdQueue, 1, &dPobj, 0, NULL, NULL );
+	status = clEnqueueAcquireGLObjects( CmdQueue, 1, &dPobj, 0, nullptr, nullptr );
 	PrintCLError( status, "clEnqueueAcquireGLObjects (1): " );
-	status = clEnqueueAcquireGLObjects( CmdQueue, 1, &dCobj, 0, NULL, NULL );
+	status = clEnqueueAcquireGLObjects( CmdQueue, 1, &dCobj, 0, nullptr, nullptr );
 	PrintCLError( status, "clEnqueueAcquireGLObjects (2): " );
 
 	if( ShowPerformance )
@@ -221,7 +228,7 @@ Animate( )
 	// 11. enqueue the Kernel object for execution:
 
 	cl_event wait;
-	status = clEnqueueNDRangeKernel( CmdQueue, Kernel, 1, NULL, GlobalWorkSize, LocalWorkSize, 0, NULL, &wait );
+	status = clEnqueueNDRangeKernel( CmdQueue, Kernel, 1, nullptr, GlobalWorkSize, LocalWorkSize, 0, nullptr, &wait );
 	PrintCLError( status, "clEnqueueNDRangeKernel: " );
 
 	if( ShowPerformance )
@@ -233,9 +240,9 @@ Animate( )
 	}
 
 	clFinish( CmdQueue );
-	status = clEnqueueReleaseGLObjects( CmdQueue, 1, &dCobj, 0, NULL, NULL );
+	status = clEnqueueReleaseGLObjects( CmdQueue, 1, &dCobj, 0, nullptr, nullptr );
 	PrintCLError( status, "clEnqueueReleaseGLObjects (2): " );
-	status = clEnqueueReleaseGLObjects( CmdQueue, 1, &dPobj, 0, NULL, NULL );
+	status = clEnqueueReleaseGLObjects( CmdQueue, 1, &dPobj, 0, nullptr, nullptr );
 	PrintCLError( status, "clEnqueueReleaseGLObjects (2): " );
 
 	glutSetWindow( MainWindow );
@@ -262,7 +269,7 @@ Buttons( int id )
 		case PAUSE:
 			Paused = ! Paused;
 			if( Paused )
-				GLUI_Master.set_glutIdleFunc( NULL );
+				GLUI_Master.set_glutIdleFunc( nullptr );
 			else
 				GLUI_Master.set_glutIdleFunc( Animate );
 			break;
@@ -270,9 +277,9 @@ Buttons( int id )
 		case RESET:
 			Reset( );
 			ResetParticles( );
-			status = clEnqueueWriteBuffer( CmdQueue, dVel, CL_FALSE, 0, 4*sizeof(float)*NUM_PARTICLES, hVel, 0, NULL, NULL );
+			status = clEnqueueWriteBuffer( CmdQueue, dVel, CL_FALSE, 0, 4*sizeof(float)*NUM_PARTICLES, hVel, 0, nullptr, nullptr );
 			PrintCLError( status, "clEneueueWriteBuffer: " );
-			GLUI_Master.set_glutIdleFunc( NULL );
+			GLUI_Master.set_glutIdleFunc( nullptr );
 			Glui->sync_live( );
 			glutSetWindow( MainWindow );
 			glutPostRedisplay( );
@@ -457,13 +464,13 @@ InitCL( )
 	// (no point going on if it isn't):
 	// (we need the Device in order to ask, so can't do it any sooner than here)
 
-	if(  IsCLExtensionSupported( "cl_khr_gl_sharing" )  )
+	if(  IsCLExtensionSupported( "cl_APPLE_gl_sharing" )  )  // cl_khr_gl_sharing
 	{
-		fprintf( stderr, "cl_khr_gl_sharing is supported.\n" );
+		fprintf( stderr, "cl_APPLE_gl_sharing is supported.\n" );  // cl_khr_gl_sharing
 	}
 	else
 	{
-		fprintf( stderr, "cl_khr_gl_sharing is not supported -- sorry.\n" );
+		fprintf( stderr, "cl_APPLE_gl_sharing is not supported -- sorry.\n" );  // cl_khr_gl_sharing
 		return;
 	}
 
@@ -471,15 +478,42 @@ InitCL( )
 
 	// 3. create an opencl context based on the opengl context:
 
-	cl_context_properties props[ ] =
-	{
-		CL_GL_CONTEXT_KHR,		(cl_context_properties) wglGetCurrentContext( ),
-		CL_WGL_HDC_KHR,			(cl_context_properties) wglGetCurrentDC( ),
-		CL_CONTEXT_PLATFORM,		(cl_context_properties) Platform,
-		0
-	};
+	#if defined(_WIN32)
 
-	cl_context Context = clCreateContext( props, 1, &Device, NULL, NULL, &status );
+    // Windows                                                                  
+    cl_context_properties properties[] = {
+      CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+      CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+      CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
+      0
+    };
+
+#elif defined(__APPLE__)
+
+    // OS X                                                                     
+    CGLContextObj     kCGLContext     = CGLGetCurrentContext();
+    CGLShareGroupObj  kCGLShareGroup  = CGLGetShareGroup(kCGLContext);
+
+    cl_context_properties properties[] = {
+      CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+      (cl_context_properties) kCGLShareGroup,
+      0
+    };
+
+#else
+
+    // Linux                                                                    
+    cl_context_properties properties[] = {
+      CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
+      CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
+      CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
+      0
+    };
+
+#endif
+
+
+	cl_context Context = clCreateContext( properties, 0, 0, nullptr, NULL, &status );
 	PrintCLError( status, "clCreateContext: " );
 
 	// 4. create an opencl command queue:
@@ -522,7 +556,7 @@ InitCL( )
 
 	// 6. enqueue the command to write the data from the host buffers to the Device buffers:
 
-	status = clEnqueueWriteBuffer( CmdQueue, dVel, CL_FALSE, 0, 4*sizeof(float)*NUM_PARTICLES, hVel, 0, NULL, NULL );
+	status = clEnqueueWriteBuffer( CmdQueue, dVel, CL_FALSE, 0, 4*sizeof(float)*NUM_PARTICLES, hVel, 0, nullptr, nullptr);
 	PrintCLError( status, "clEneueueWriteBuffer: " );
 
 	// 7. read the Kernel code from a file:
@@ -539,7 +573,7 @@ InitCL( )
 
 	char *strings[1];
 	strings[0] = clProgramText;
-	Program = clCreateProgramWithSource( Context, 1, (const char **)strings, NULL, &status );
+	Program = clCreateProgramWithSource( Context, 1, (const char **)strings, nullptr, &status );
 	if( status != CL_SUCCESS )
 		fprintf( stderr, "clCreateProgramWithSource failed\n" );
 	delete [ ] clProgramText;
@@ -547,13 +581,13 @@ InitCL( )
 	// 8. compile and link the Kernel code:
 
 	char *options = { "" };
-	status = clBuildProgram( Program, 1, &Device, options, NULL, NULL );
+	status = clBuildProgram( Program, 1, &Device, options, nullptr, NULL );
 	if( status != CL_SUCCESS )
 	{
 		size_t size;
 		clGetProgramBuildInfo( Program, Device, CL_PROGRAM_BUILD_LOG, 0, NULL, &size );
 		cl_char *log = new cl_char[ size ];
-		clGetProgramBuildInfo( Program, Device, CL_PROGRAM_BUILD_LOG, size, log, NULL );
+		clGetProgramBuildInfo( Program, Device, CL_PROGRAM_BUILD_LOG, size, log, nullptr );
 		fprintf( stderr, "clBuildProgram failed:\n%s\n", log );
 		delete [ ] log;
 	}
@@ -620,7 +654,7 @@ InitGlui( )
 		Glui->add_button_to_panel( panel, "Quit", QUIT, (GLUI_Update_CB) Buttons );
 
 	Glui->set_main_gfx_window( MainWindow );
-	GLUI_Master.set_glutIdleFunc( NULL );
+	GLUI_Master.set_glutIdleFunc( nullptr );
 }
 
 
@@ -1098,7 +1132,7 @@ IsCLExtensionSupported( const char *extension )
 	size_t extensionSize;
 	clGetDeviceInfo( Device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensionSize );
 	char *extensions = new char [extensionSize];
-	clGetDeviceInfo( Device, CL_DEVICE_EXTENSIONS, extensionSize, extensions, NULL );
+	clGetDeviceInfo( Device, CL_DEVICE_EXTENSIONS, extensionSize, extensions, nullptr );
 
 	for( char * start = extensions; ; )
 	{
@@ -1210,14 +1244,14 @@ PrintOpenclInfo()
 		// find out how many platforms are attached here and get their ids:
 
 		cl_uint numPlatforms;
-		status = clGetPlatformIDs(0, NULL, &numPlatforms);
+		status = clGetPlatformIDs(0, nullptr, &numPlatforms);
 		if (status != CL_SUCCESS)
 			fprintf(stderr, "clGetPlatformIDs failed (1)\n");
 
 		fprintf(stderr, "Number of Platforms = %d\n", numPlatforms);
 
 		cl_platform_id* platforms = new cl_platform_id[numPlatforms];
-		status = clGetPlatformIDs(numPlatforms, platforms, NULL);
+		status = clGetPlatformIDs(numPlatforms, platforms, nullptr);
 		if (status != CL_SUCCESS)
 			fprintf(stderr, "clGetPlatformIDs failed (2)\n");
 
@@ -1229,25 +1263,25 @@ PrintOpenclInfo()
 
 			clGetPlatformInfo(platforms[p], CL_PLATFORM_NAME, 0, NULL, &size);
 			str = new char[size];
-			clGetPlatformInfo(platforms[p], CL_PLATFORM_NAME, size, str, NULL);
+			clGetPlatformInfo(platforms[p], CL_PLATFORM_NAME, size, str, nullptr);
 			fprintf(stderr, "\tName    = '%s'\n", str);
 			delete[] str;
 
 			clGetPlatformInfo(platforms[p], CL_PLATFORM_VENDOR, 0, NULL, &size);
 			str = new char[size];
-			clGetPlatformInfo(platforms[p], CL_PLATFORM_VENDOR, size, str, NULL);
+			clGetPlatformInfo(platforms[p], CL_PLATFORM_VENDOR, size, str, nullptr);
 			fprintf(stderr, "\tVendor  = '%s'\n", str);
 			delete[] str;
 
 			clGetPlatformInfo(platforms[p], CL_PLATFORM_VERSION, 0, NULL, &size);
 			str = new char[size];
-			clGetPlatformInfo(platforms[p], CL_PLATFORM_VERSION, size, str, NULL);
+			clGetPlatformInfo(platforms[p], CL_PLATFORM_VERSION, size, str, nullptr);
 			fprintf(stderr, "\tVersion = '%s'\n", str);
 			delete[] str;
 
 			clGetPlatformInfo(platforms[p], CL_PLATFORM_PROFILE, 0, NULL, &size);
 			str = new char[size];
-			clGetPlatformInfo(platforms[p], CL_PLATFORM_PROFILE, size, str, NULL);
+			clGetPlatformInfo(platforms[p], CL_PLATFORM_PROFILE, size, str, nullptr);
 			fprintf(stderr, "\tProfile = '%s'\n", str);
 			delete[] str;
 
@@ -1256,14 +1290,14 @@ PrintOpenclInfo()
 
 			cl_uint numDevices;
 
-			status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+			status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr, &numDevices);
 			if (status != CL_SUCCESS)
 				fprintf(stderr, "clGetDeviceIDs failed (2)\n");
 
 			fprintf(stderr, "\tNumber of Devices = %d\n", numDevices);
 
 			cl_device_id * devices = new cl_device_id[numDevices];
-			status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+			status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, numDevices, devices, nullptr);
 			if (status != CL_SUCCESS)
 				fprintf(stderr, "clGetDeviceIDs failed (2)\n");
 
@@ -1275,7 +1309,7 @@ PrintOpenclInfo()
 				cl_uint ui;
 				size_t sizes[3] = { 0, 0, 0 };
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_TYPE, sizeof(type), &type, nullptr);
 				fprintf(stderr, "\t\tType = 0x%04x = ", (unsigned int)type);
 				switch (type)
 				{
@@ -1293,7 +1327,7 @@ PrintOpenclInfo()
 					break;
 				}
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_VENDOR_ID, sizeof(ui), &ui, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_VENDOR_ID, sizeof(ui), &ui, nullptr);
 				fprintf(stderr, "\t\tDevice Vendor ID = 0x%04x ", ui);
 				switch (ui)
 				{
@@ -1310,25 +1344,25 @@ PrintOpenclInfo()
 					fprintf(stderr, "(?)\n");
 				}
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(ui), &ui, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(ui), &ui, nullptr);
 				fprintf(stderr, "\t\tDevice Maximum Compute Units = %d\n", ui);
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(ui), &ui, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(ui), &ui,nullptr);
 				fprintf(stderr, "\t\tDevice Maximum Work Item Dimensions = %d\n", ui);
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(sizes), sizes, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(sizes), sizes, nullptr);
 				fprintf(stderr, "\t\tDevice Maximum Work Item Sizes = %d x %d x %d\n", sizes[0], sizes[1], sizes[2]);
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size), &size, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size), &size, nullptr);
 				fprintf(stderr, "\t\tDevice Maximum Work Group Size = %d\n", size);
 
-				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(ui), &ui, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(ui), &ui, nullptr);
 				fprintf(stderr, "\t\tDevice Maximum Clock Frequency = %d MHz\n", ui);
 
 				size_t extensionSize;
 				clGetDeviceInfo(devices[d], CL_DEVICE_EXTENSIONS, 0, NULL, &extensionSize);
 				char* extensions = new char[extensionSize];
-				clGetDeviceInfo(devices[d], CL_DEVICE_EXTENSIONS, extensionSize, extensions, NULL);
+				clGetDeviceInfo(devices[d], CL_DEVICE_EXTENSIONS, extensionSize, extensions, nullptr);
 				fprintf(stderr, "\nDevice #%d's Extensions:\n", d );
 				for (int e = 0; e < (int)strlen(extensions); e++)
 				{
@@ -1364,12 +1398,12 @@ SelectOpenclDevice()
 	// find out how many platforms are attached here and get their ids:
 
 	cl_uint numPlatforms;
-	status = clGetPlatformIDs(0, NULL, &numPlatforms);
+	status = clGetPlatformIDs(0,nullptr, &numPlatforms);
 	if (status != CL_SUCCESS)
 		fprintf(stderr, "clGetPlatformIDs failed (1)\n");
 
 	cl_platform_id* platforms = new cl_platform_id[numPlatforms];
-	status = clGetPlatformIDs(numPlatforms, platforms, NULL);
+	status = clGetPlatformIDs(numPlatforms, platforms, nullptr);
 	if (status != CL_SUCCESS)
 		fprintf(stderr, "clGetPlatformIDs failed (2)\n");
 
@@ -1379,12 +1413,12 @@ SelectOpenclDevice()
 
 		cl_uint numDevices;
 
-		status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+		status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr, &numDevices);
 		if (status != CL_SUCCESS)
 			fprintf(stderr, "clGetDeviceIDs failed (2)\n");
 
 		cl_device_id* devices = new cl_device_id[numDevices];
-		status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+		status = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, numDevices, devices, nullptr);
 		if (status != CL_SUCCESS)
 			fprintf(stderr, "clGetDeviceIDs failed (2)\n");
 
@@ -1394,9 +1428,9 @@ SelectOpenclDevice()
 			cl_uint vendor;
 			size_t sizes[3] = { 0, 0, 0 };
 
-			clGetDeviceInfo(devices[d], CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+			clGetDeviceInfo(devices[d], CL_DEVICE_TYPE, sizeof(type), &type, nullptr);
 
-			clGetDeviceInfo(devices[d], CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL);
+			clGetDeviceInfo(devices[d], CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, nullptr);
 
 			// select:
 
