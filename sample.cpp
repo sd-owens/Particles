@@ -44,14 +44,14 @@ const char *GLUITITLE   = { "User Interface Window" };
 
 // random parameters:					
 
-const float XMIN = 	{ -100.0 };
+const float XMIN = 	{  00.0 };
 const float XMAX = 	{  100.0 };
-const float YMIN = 	{ -100.0 };
-const float YMAX = 	{  100.0 };
-const float ZMIN = 	{ -100.0 };
-const float ZMAX = 	{  100.0 };
+const float YMIN = 	{   500.0 };
+const float YMAX = 	{  1000.0 };
+const float ZMIN = 	{ -50.0 };
+const float ZMAX = 	{  50.0 };
 
-const float VMIN =	{   -100. };
+const float VMIN =	{    0. };
 const float VMAX =	{    100. };
 
 
@@ -730,7 +730,7 @@ InitLists( )
 		glColor3f( .1f, .1f, .9f );	// 0. <= r,g,b <= 1.
 		glPushMatrix( );
 			glTranslatef( 800.f, -400.f, 0.f );
-			glutWireSphere( 50.f, 100, 100 );
+			glutWireSphere( 400.f, 100, 100 );
 		glPopMatrix( );
 
 
@@ -909,9 +909,9 @@ ResetParticles( )
 	struct rgba *colors = (struct rgba *) glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY );
 	for( int i = 0; i < NUM_PARTICLES; i++ )
 	{
-		colors[i].r = Ranf( .3f, 1. );
-		colors[i].g = Ranf( .3f, 1. );
-		colors[i].b = Ranf( .3f, 1. );
+		colors[i].r = Ranf( .9f, 1. );
+		colors[i].g = Ranf( .9f, 1. );
+		colors[i].b = Ranf( .9f, 1. );
 		colors[i].a = 1.;
 	}
 	glUnmapBuffer( GL_ARRAY_BUFFER );
@@ -919,9 +919,9 @@ ResetParticles( )
 
 	for( int i = 0; i < NUM_PARTICLES; i++ )
 	{
-		hVel[i].x = Ranf( VMIN, VMAX );
+		hVel[i].x = 0.; //Ranf( VMIN, VMAX );
 		hVel[i].y = Ranf(   0., VMAX );
-		hVel[i].z = Ranf( VMIN, VMAX );
+		hVel[i].z = 0.; // Ranf( VMIN, VMAX );
 	}
 }
 

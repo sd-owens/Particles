@@ -35,7 +35,7 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 	const float4 G       = (float4) ( 0., -9.8, 0., 0. );
 	const float  DT      = 0.1;
 	const sphere Sphere1 = (sphere)( -100., -800., 0., 400. );
-	const sphere Sphere2 = (sphere)( 800., -400., 0., 50. );
+	const sphere Sphere2 = (sphere)( 800., -400., 0., 400. );
 
 	int gid = get_global_id( 0 );
 
@@ -45,7 +45,7 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 
 	// remember that you also need to extract this particle's color
 	// and change it in some way that is obviously correct
-	
+
 	// TODO 
 	color c = dCobj[gid];
 
@@ -62,7 +62,11 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 	{
 		vp = BounceSphere( p, v, Sphere1 );
 		pp = p + vp*DT + G*(point)( .5*DT*DT );
-		c = (.9f, .9f, .9f, 1.);
+		c.x = .9f;
+		c.y = .1f;
+		c.z = 0.f;
+		c.w = 1.f;
+		
 	}
 
 	// test against the second sphere here:
@@ -71,8 +75,13 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 	{
 		vp = BounceSphere( p, v, Sphere2 );
 		pp = p + vp*DT + G*(point)( .5*DT*DT );
+		c.x = .1f;
+		c.y = .1f;
+		c.z = .9f;
+		c.w = 1.f;
 	}
 
 	dPobj[gid] = pp;
 	dVel[gid]  = vp;
+	dCobj[gid] = c;
 }
