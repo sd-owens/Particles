@@ -46,7 +46,7 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 	// remember that you also need to extract this particle's color
 	// and change it in some way that is obviously correct
 
-	// TODO 
+	// color is a float4 struct xyzw (red, green, blue, alpha)
 	color c = dCobj[gid];
 
 	// advance the particle:

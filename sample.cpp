@@ -44,12 +44,12 @@ const char *GLUITITLE   = { "User Interface Window" };
 
 // random parameters:					
 
-const float XMIN = 	{  00.0 };
-const float XMAX = 	{  100.0 };
+const float XMIN = 	{ -125.0 };
+const float XMAX = 	{  -75.0 };
 const float YMIN = 	{   500.0 };
 const float YMAX = 	{  1000.0 };
-const float ZMIN = 	{ -50.0 };
-const float ZMAX = 	{  50.0 };
+const float ZMIN = 	{  -125.0 };
+const float ZMAX = 	{  -75.0 };
 
 const float VMIN =	{    0. };
 const float VMAX =	{    100. };
@@ -909,9 +909,9 @@ ResetParticles( )
 	struct rgba *colors = (struct rgba *) glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY );
 	for( int i = 0; i < NUM_PARTICLES; i++ )
 	{
-		colors[i].r = Ranf( .9f, 1. );
-		colors[i].g = Ranf( .9f, 1. );
-		colors[i].b = Ranf( .9f, 1. );
+		colors[i].r = Ranf( .3f, 1. );
+		colors[i].g = Ranf( .3f, 1. );
+		colors[i].b = Ranf( .3f, 1. );
 		colors[i].a = 1.;
 	}
 	glUnmapBuffer( GL_ARRAY_BUFFER );
