@@ -34,8 +34,8 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 {
 	const float4 G       = (float4) ( 0., -9.8, 0., 0. );
 	const float  DT      = 0.1;
-	const sphere Sphere1 = (sphere)( -100., -800., 0., 400. );
-	const sphere Sphere2 = (sphere)( 800., -400., 0., 400. );
+	const sphere Sphere1 = (sphere)( -100., -800., 0., 600. );
+	const sphere Sphere2 = (sphere)( 800., 100., 0., 600. );
 
 	int gid = get_global_id( 0 );
 
@@ -63,8 +63,8 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 		vp = BounceSphere( p, v, Sphere1 );
 		pp = p + vp*DT + G*(point)( .5*DT*DT );
 		c.x = .9f;
-		c.y = .1f;
-		c.z = 0.f;
+		c.y = .9f;
+		c.z = .1f;
 		c.w = 1.f;
 		
 	}
@@ -76,8 +76,8 @@ Particle( global point *dPobj, global vector *dVel, global color *dCobj )
 		vp = BounceSphere( p, v, Sphere2 );
 		pp = p + vp*DT + G*(point)( .5*DT*DT );
 		c.x = .1f;
-		c.y = .1f;
-		c.z = .9f;
+		c.y = .9f;
+		c.z = .1f;
 		c.w = 1.f;
 	}
 
